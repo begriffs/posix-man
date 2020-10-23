@@ -1,0 +1,3 @@
+for f in *.3p; do 
+    mv -- "$f" "${f%.3p}.3"
+done

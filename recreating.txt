@@ -1,0 +1,30 @@
+These files came from a Debian package:
+https://mirrors.edge.kernel.org/pub/linux/docs/man-pages/man-pages-posix/
+
+Rename the .{n}p extensions to .{n}:
+
+	for f in *.3p; do 
+		mv -- "$f" "${f%.3p}.3"
+	done
+
+Patch out the Linux preamble:
+
+	ls *.3 | xargs -I{} -L 1 patch {} remove-prolog.patch
+
+where remove-prolog.patch is:
+
+	4,8d3
+	< .SH PROLOG
+	< This manual page is part of the POSIX Programmer's Manual.
+	< The Linux implementation of this interface may differ (consult
+	< the corresponding Linux manual page for details of Linux behavior),
+	< or the interface may not be implemented on Linux.
+
+Remove the "P" from section numbers internally:
+
+	for f in *.3; do ex - "$f" << 'eof'; done
+	%s/3P/3/
+	%s/\.so man3p/.so man3/
+	%s/\.3p/.3/
+	x
+	eof

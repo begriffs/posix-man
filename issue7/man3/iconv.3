@@ -1,0 +1,230 @@
+'\" et
+.TH ICONV "3" 2013 "IEEE/The Open Group" "POSIX Programmer's Manual"
+
+.SH NAME
+iconv
+\(em codeset conversion function
+.SH SYNOPSIS
+.LP
+.nf
+#include <iconv.h>
+.P
+size_t iconv(iconv_t \fIcd\fP, char **restrict \fIinbuf\fP,
+    size_t *restrict \fIinbytesleft\fP, char **restrict \fIoutbuf\fP,
+    size_t *restrict \fIoutbytesleft\fP);
+.fi
+.SH DESCRIPTION
+The
+\fIiconv\fR()
+function shall convert the sequence of characters from one codeset,
+in the array specified by
+.IR inbuf ,
+into a sequence of corresponding characters in another codeset, in the
+array specified by
+.IR outbuf .
+The codesets are those specified in the
+\fIiconv_open\fR()
+call that returned the conversion descriptor,
+.IR cd .
+The
+.IR inbuf
+argument points to a variable that points to the first character in the
+input buffer and
+.IR inbytesleft
+indicates the number of bytes to the end of the buffer to be
+converted. The
+.IR outbuf
+argument points to a variable that points to the first available byte
+in the output buffer and
+.IR outbytesleft
+indicates the number of the available bytes to the end of the buffer.
+.P
+For state-dependent encodings, the conversion descriptor
+.IR cd
+is placed into its initial shift state by a call for which
+.IR inbuf
+is a null pointer, or for which
+.IR inbuf
+points to a null pointer. When
+\fIiconv\fR()
+is called in this way, and if
+.IR outbuf
+is not a null pointer or a pointer to a null pointer, and
+.IR outbytesleft
+points to a positive value,
+\fIiconv\fR()
+shall place, into the output buffer, the byte sequence to change the
+output buffer to its initial shift state. If the output buffer is not
+large enough to hold the entire reset sequence,
+\fIiconv\fR()
+shall fail and set
+.IR errno
+to
+.BR [E2BIG] .
+Subsequent calls with
+.IR inbuf
+as other than a null pointer or a pointer to a null pointer cause the
+conversion to take place from the current state of the conversion
+descriptor.
+.P
+If a sequence of input bytes does not form a valid character in the
+specified codeset, conversion shall stop after the previous
+successfully converted character. If the input buffer ends with an
+incomplete character or shift sequence, conversion shall stop after the
+previous successfully converted bytes. If the output buffer is not
+large enough to hold the entire converted input, conversion shall stop
+just prior to the input bytes that would cause the output buffer to
+overflow. The variable pointed to by
+.IR inbuf
+shall be updated to point to the byte following the last byte
+successfully used in the conversion. The value pointed to by
+.IR inbytesleft
+shall be decremented to reflect the number of bytes still not converted
+in the input buffer. The variable pointed to by
+.IR outbuf
+shall be updated to point to the byte following the last byte of
+converted output data. The value pointed to by
+.IR outbytesleft
+shall be decremented to reflect the number of bytes still available in
+the output buffer. For state-dependent encodings, the conversion
+descriptor shall be updated
+to reflect the shift state in effect at the end of the last
+successfully converted byte sequence.
+.P
+If
+\fIiconv\fR()
+encounters a character in the input buffer that is valid, but for which
+an identical character does not exist in the target codeset,
+\fIiconv\fR()
+shall perform an implementation-defined conversion on this character.
+.SH "RETURN VALUE"
+The
+\fIiconv\fR()
+function shall update the variables pointed to by the arguments to
+reflect the extent of the conversion and return the number of
+non-identical conversions performed. If the entire string in the input
+buffer is converted, the value pointed to by
+.IR inbytesleft
+shall be 0. If the input conversion is stopped due to any conditions
+mentioned above, the value pointed to by
+.IR inbytesleft
+shall be non-zero and
+.IR errno
+shall be set to indicate the condition. If an error occurs,
+\fIiconv\fR()
+shall return (\fBsize_t\fP)\(mi1 and set
+.IR errno
+to indicate the error.
+.SH ERRORS
+The
+\fIiconv\fR()
+function shall fail if:
+.TP
+.BR EILSEQ
+Input conversion stopped due to an input byte that does not belong to
+the input codeset.
+.TP
+.BR E2BIG
+Input conversion stopped due to lack of space in the output buffer.
+.TP
+.BR EINVAL
+Input conversion stopped due to an incomplete character or shift
+sequence at the end of the input buffer.
+.P
+The
+\fIiconv\fR()
+function may fail if:
+.TP
+.BR EBADF
+The
+.IR cd
+argument is not a valid open conversion descriptor.
+.LP
+.IR "The following sections are informative."
+.SH EXAMPLES
+None.
+.SH "APPLICATION USAGE"
+The
+.IR inbuf
+argument indirectly points to the memory area which contains the
+conversion input data. The
+.IR outbuf
+argument indirectly points to the memory area which is to contain the
+result of the conversion. The objects indirectly pointed to by
+.IR inbuf
+and
+.IR outbuf
+are not restricted to containing data that is directly representable in
+the ISO\ C standard language
+.BR char
+data type. The type of
+.IR inbuf
+and
+.IR outbuf ,
+.BR "char **" ,
+does not imply that the objects pointed to are interpreted as
+null-terminated C strings or arrays of characters. Any interpretation
+of a byte sequence that represents a character in a given character set
+encoding scheme is done internally within the codeset converters. For
+example, the area pointed to indirectly by
+.IR inbuf
+and/or
+.IR outbuf
+can contain all zero octets that are not interpreted as string
+terminators but as coded character data according to the respective
+codeset encoding scheme. The type of the data (\c
+.BR char ,
+.BR short ,
+.BR long ,
+and so on) read or stored in the objects is not specified, but may be
+inferred for both the input and output data by the converters
+determined by the
+.IR fromcode
+and
+.IR tocode
+arguments of
+\fIiconv_open\fR().
+.P
+Regardless of the data type inferred by the converter, the size of the
+remaining space in both input and output objects (the
+.IR intbytesleft
+and
+.IR outbytesleft
+arguments) is always measured in bytes.
+.P
+For implementations that support the conversion of state-dependent
+encodings, the conversion descriptor must be able to accurately reflect
+the shift-state in effect at the end of the last successful
+conversion. It is not required that the conversion descriptor itself
+be updated, which would require it to be a pointer type. Thus,
+implementations are free to implement the descriptor as a handle (other
+than a pointer type) by which the conversion information can be
+accessed and updated.
+.SH RATIONALE
+None.
+.SH "FUTURE DIRECTIONS"
+None.
+.SH "SEE ALSO"
+.IR "\fIiconv_open\fR\^(\|)",
+.IR "\fIiconv_close\fR\^(\|)",
+.IR "\fImbsrtowcs\fR\^(\|)"
+.P
+The Base Definitions volume of POSIX.1\(hy2008,
+.IR "\fB<iconv.h>\fP"
+.SH COPYRIGHT
+Portions of this text are reprinted and reproduced in electronic form
+from IEEE Std 1003.1, 2013 Edition, Standard for Information Technology
+-- Portable Operating System Interface (POSIX), The Open Group Base
+Specifications Issue 7, Copyright (C) 2013 by the Institute of
+Electrical and Electronics Engineers, Inc and The Open Group.
+(This is POSIX.1-2008 with the 2013 Technical Corrigendum 1 applied.) In the
+event of any discrepancy between this version and the original IEEE and
+The Open Group Standard, the original IEEE and The Open Group Standard
+is the referee document. The original Standard can be obtained online at
+http://www.unix.org/online.html .
+
+Any typographical or formatting errors that appear
+in this page are most likely
+to have been introduced during the conversion of the source files to
+man page format. To report such errors, see
+https://www.kernel.org/doc/man-pages/reporting_bugs.html .
